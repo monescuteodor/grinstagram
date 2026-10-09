@@ -77,12 +77,12 @@ function postCard(post) {
       <div class="card-head">
         <a href="#/u/${encodeURIComponent(post.author.username)}">${avatarHtml(post.author, "sm")}</a>
         <a href="#/u/${encodeURIComponent(post.author.username)}" class="username">${escapeHtml(post.author.username)}</a>
-        ${post.mine ? '<button class="menu icon-btn js-del" title="Sterge">🗑</button>' : ""}
+        ${post.mine ? '<button class="menu icon-btn js-del" title="Sterge">✕</button>' : ""}
       </div>
       <img class="card-img" src="${escapeHtml(post.image)}" alt="postare" />
       <div class="card-actions">
-        <button class="like ${post.likedByMe ? "active" : ""} js-like">${post.likedByMe ? "❤️" : "🤍"}</button>
-        <button class="js-open-comments" title="Comentarii">💬</button>
+        <button class="like ${post.likedByMe ? "active" : ""} js-like">${post.likedByMe ? "♥" : "♡"}</button>
+        <button class="js-open-comments" title="Comentarii">✎</button>
       </div>
       <div class="card-body">
         <div class="likes js-likecount">${post.likeCount} aprecieri</div>
@@ -104,12 +104,12 @@ function postCard(post) {
   `);
 
   // Like
-  card.querySelector(".js-like").addEventListener("click", async (e) => {
+  const likeBtn = card.querySelector(".js-like");
+  likeBtn.addEventListener("click", async () => {
     try {
       const r = await api(`/api/posts/${post.id}/like`, { method: "POST" });
-      const btn = e.currentTarget;
-      btn.classList.toggle("active", r.liked);
-      btn.textContent = r.liked ? "❤️" : "🤍";
+      likeBtn.classList.toggle("active", r.liked);
+      likeBtn.textContent = r.liked ? "♥" : "♡";
       card.querySelector(".js-likecount").textContent = r.likeCount + " aprecieri";
     } catch (err) {
       toast(err.message);
@@ -168,9 +168,9 @@ async function viewFeed() {
   if (!posts.length) {
     appEl.innerHTML = `
       <div class="empty">
-        <h2>Feed gol 👋</h2>
+        <h2>Feed gol</h2>
         <p>Urmareste utilizatori din <a class="link" href="#/explore">Explore</a>
-        sau creeaza prima ta postare cu butonul ➕.</p>
+        sau creeaza prima ta postare cu butonul ⊕.</p>
       </div>`;
     return;
   }
@@ -192,7 +192,7 @@ async function viewExplore() {
     const tile = el(`
       <div class="tile" role="button" tabindex="0">
         <img src="${escapeHtml(p.image)}" alt="postare" />
-        <div class="overlay"><span>❤️ ${p.likeCount}</span><span>💬 ${p.commentCount}</span></div>
+        <div class="overlay"><span>♥ ${p.likeCount}</span><span>✎ ${p.commentCount}</span></div>
       </div>`);
     tile.addEventListener("click", () => openPostModal(p.id));
     grid.appendChild(tile);
@@ -272,7 +272,7 @@ async function viewProfile(username) {
     const tile = el(`
       <div class="tile" role="button" tabindex="0">
         <img src="${escapeHtml(p.image)}" alt="postare" />
-        <div class="overlay"><span>❤️ ${p.likeCount}</span><span>💬 ${p.commentCount}</span></div>
+        <div class="overlay"><span>♥ ${p.likeCount}</span><span>✎ ${p.commentCount}</span></div>
       </div>`);
     tile.addEventListener("click", () => openPostModal(p.id));
     grid.appendChild(tile);
@@ -375,7 +375,7 @@ function openNewPostModal() {
     <div class="modal">
       <div class="modal-head">Creeaza o postare noua<button class="close">✕</button></div>
       <div class="modal-body">
-        <div class="dropzone js-drop">📷<br />Apasa pentru a alege o imagine</div>
+        <div class="dropzone js-drop"><span class="drop-icon">⊕</span><br />Apasa pentru a alege o imagine</div>
         <img class="preview" hidden />
         <input type="file" accept="image/*" hidden class="js-file" />
         <label>Descriere</label>
@@ -412,7 +412,7 @@ function openNewPostModal() {
     try {
       await api("/api/posts", { method: "POST", form });
       closeModal();
-      toast("Postare publicata! 🎉");
+      toast("Postare publicata!");
       if ((location.hash || "").startsWith("#/feed") || !location.hash) viewFeed();
       else location.hash = "#/feed";
     } catch (err) {
@@ -456,12 +456,13 @@ function openEditProfileModal() {
 
   modal.querySelector(".close").addEventListener("click", closeModal);
 
-  modal.querySelector(".js-save").addEventListener("click", async (e) => {
+  const saveBtn = modal.querySelector(".js-save");
+  saveBtn.addEventListener("click", async () => {
     const form = new FormData();
     form.append("fullName", modal.querySelector(".js-fullname").value);
     form.append("bio", modal.querySelector(".js-bio").value);
     if (avatarInput.files[0]) form.append("avatar", avatarInput.files[0]);
-    e.currentTarget.disabled = true;
+    saveBtn.disabled = true;
     try {
       const { user } = await api("/api/profile", { method: "PUT", form });
       state.me = user;
@@ -471,7 +472,7 @@ function openEditProfileModal() {
       viewProfile(user.username);
     } catch (err) {
       toast(err.message);
-      e.currentTarget.disabled = false;
+      saveBtn.disabled = false;
     }
   });
 
@@ -552,10 +553,14 @@ function renderAuth() {
   const errorEl = document.getElementById("auth-error");
   const toggle = document.getElementById("auth-toggle");
   const switchText = document.querySelector(".js-switch-text");
+  const hint = form.querySelector(".js-hint");
+  const password = form.querySelector('input[name="password"]');
 
   function applyMode() {
     const reg = mode === "register";
     fullname.hidden = !reg;
+    hint.hidden = !reg;
+    password.setAttribute("autocomplete", reg ? "new-password" : "current-password");
     submit.textContent = reg ? "Inregistreaza-te" : "Log in";
     switchText.textContent = reg ? "Ai deja cont?" : "Nu ai cont?";
     toggle.textContent = reg ? "Log in" : "Inregistreaza-te";

@@ -1,23 +1,23 @@
-# 📸 Grinstagram
+# Grinstagram
 
 **Grinstagram** este o rețea de socializare în stil Instagram, full-stack, care rulează local pe calculatorul tău. Îți faci cont, postezi poze, dai like, comentezi și urmărești alți utilizatori — totul dintr-o aplicație web pe care o pornești cu o singură comandă.
 
 > Proiect educativ. Nu este afiliat cu Instagram / Meta.
 
-## ✨ Funcții
+## Funcții
 
-- 🔐 Înregistrare & autentificare (parole criptate cu bcrypt, sesiune pe cookie JWT)
-- 🖼️ Postări cu imagini + descriere (upload de pe disc)
-- 🏠 Feed personalizat (postările tale + ale celor pe care îi urmărești)
-- 🔍 Explore (toate postările recente, în grilă)
-- ❤️ Like / unlike
-- 💬 Comentarii
-- 👥 Follow / unfollow
-- 👤 Profiluri cu avatar, bio, nume, statistici (postări / urmăritori / urmărești)
-- 🔎 Căutare de utilizatori
-- 📱 Design responsive, în stilul Instagram
+- Înregistrare & autentificare (parole criptate cu bcrypt, sesiune pe cookie JWT)
+- Postări cu imagini + descriere (upload de pe disc)
+- Feed personalizat (postările tale + ale celor pe care îi urmărești)
+- Explore (toate postările recente, în grilă)
+- Like / unlike
+- Comentarii
+- Follow / unfollow
+- Profiluri cu avatar, bio, nume, statistici (postări / urmăritori / urmărești)
+- Căutare de utilizatori
+- Design responsive, în stilul Instagram
 
-## 🧰 Tehnologii
+## Tehnologii
 
 | Strat        | Tehnologie                         |
 | ------------ | ---------------------------------- |
@@ -27,7 +27,7 @@
 | Upload       | multer (imagini salvate pe disc)   |
 | Frontend     | HTML + CSS + JavaScript (fără build)|
 
-## 🚀 Cum rulezi (Windows / macOS / Linux)
+## Cum rulezi (Windows / macOS / Linux)
 
 Ai nevoie de [Node.js](https://nodejs.org) (versiunea 18 sau mai nouă; testat pe 22).
 
@@ -49,7 +49,7 @@ Pentru dezvoltare, cu restart automat la modificări:
 npm run dev
 ```
 
-## 🗂️ Structura proiectului
+## Structura proiectului
 
 ```
 grinstagram/
@@ -65,7 +65,7 @@ grinstagram/
 └── package.json
 ```
 
-## ⚙️ Configurare (opțional)
+## Configurare (opțional)
 
 Variabile de mediu:
 
@@ -80,7 +80,7 @@ $env:JWT_SECRET="un-secret-lung-si-aleator"; npm start
 JWT_SECRET="un-secret-lung-si-aleator" npm start
 ```
 
-## 📡 API (pe scurt)
+## API (pe scurt)
 
 | Metodă | Rută                              | Descriere                         |
 | ------ | --------------------------------- | --------------------------------- |
@@ -100,6 +100,6 @@ JWT_SECRET="un-secret-lung-si-aleator" npm start
 | POST   | `/api/users/:username/follow`     | Follow / unfollow (toggle)        |
 | PUT    | `/api/profile`                    | Actualizează profilul             |
 
-## 📝 Licență
+## Licență
 
 MIT © Monescu Teodor
