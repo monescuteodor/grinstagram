@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grinstagram</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>"
+    />
+  </head>
+  <body>
+    <!-- Top navigation -->
+    <header class="nav" id="nav" hidden>
+      <div class="nav-inner">
+        <a href="#/feed" class="logo">Grinstagram</a>
+        <div class="search">
+          <input id="search-input" type="text" placeholder="Cauta utilizatori…" autocomplete="off" />
+          <div class="search-results" id="search-results" hidden></div>
+        </div>
+        <nav class="nav-actions">
+          <a href="#/feed" title="Acasa" class="icon-btn">🏠</a>
+          <a href="#/explore" title="Explore" class="icon-btn">🔍</a>
+          <button id="btn-new-post" class="icon-btn" title="Postare noua">➕</button>
+          <a href="" id="nav-profile" title="Profilul meu" class="icon-btn avatar-link"></a>
+          <button id="btn-logout" class="icon-btn" title="Logout">↪</button>
+        </nav>
+      </div>
+    </header>
+
+    <main id="app"><div class="loader">Se incarca…</div></main>
+
+    <!-- Modal host -->
+    <div id="modal-root"></div>
+
+    <template id="tpl-auth">
+      <section class="auth">
+        <div class="auth-card">
+          <h1 class="logo big">Grinstagram</h1>
+          <p class="auth-sub">Conecteaza-te ca sa vezi poze de la prietenii tai.</p>
+          <form id="auth-form" class="auth-form">
+            <input name="fullName" class="js-fullname" type="text" placeholder="Nume complet" hidden />
+            <input name="username" type="text" placeholder="Username" autocomplete="username" required />
+            <input name="password" type="password" placeholder="Parola" autocomplete="current-password" required />
+            <button type="submit" class="btn btn-primary btn-block js-submit">Log in</button>
+            <p class="auth-error" id="auth-error" hidden></p>
+          </form>
+          <div class="auth-switch">
+            <span class="js-switch-text">Nu ai cont?</span>
+            <button type="button" id="auth-toggle" class="link">Inregistreaza-te</button>
+          </div>
+        </div>
+      </section>
+    </template>
+  </body>
+  <script src="/js/app.js"></script>
+</html>
