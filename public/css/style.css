@@ -398,6 +398,13 @@ main {
   margin-top: 8px;
 }
 
+.auth-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 2px 2px 0;
+}
+
 .auth-error {
   color: var(--red);
   text-align: center;
@@ -573,6 +580,13 @@ main {
 .dropzone:hover {
   border-color: var(--blue);
   color: var(--blue);
+}
+
+.dropzone .drop-icon {
+  font-size: 40px;
+  line-height: 1;
+  display: inline-block;
+  margin-bottom: 6px;
 }
 
 .preview {
