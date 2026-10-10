@@ -45,12 +45,15 @@ class Broker:
     def last_price(self, symbol: str) -> float:
         return float(self.exchange.fetch_ticker(symbol)["last"])
 
-    def min_cost(self, symbol: str) -> float:
+    def min_order_cost(self, symbol: str, price: float) -> float:
+        """Smallest order value (in quote currency) the exchange accepts for this market."""
         try:
             limits = self.exchange.market(symbol)["limits"]
-            return float((limits.get("cost") or {}).get("min") or 0.0)
         except Exception:
             return 0.0
+        cost_min = float((limits.get("cost") or {}).get("min") or 0.0)
+        amount_min = float((limits.get("amount") or {}).get("min") or 0.0)
+        return max(cost_min, amount_min * price)
 
     # Overridden below
     def cash(self) -> float: ...
@@ -148,6 +151,11 @@ def make_exchange(cfg: Config) -> ccxt.Exchange:
     if cfg.mode == "live":
         params.update(apiKey=cfg.api_key, secret=cfg.api_secret)
     exchange = klass(params)
+    if cfg.mode == "live" and cfg.sandbox:
+        try:
+            exchange.set_sandbox_mode(True)
+        except Exception as exc:
+            raise ValueError(f"{cfg.exchange} has no testnet support in ccxt; use paper mode") from exc
     exchange.load_markets()
     return exchange
 

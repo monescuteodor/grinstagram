@@ -11,11 +11,11 @@ import pandas as pd
 from .config import Config
 from .features import add_features, atr
 from .model import SignalModel
-from .risk import Position, exit_reason, initial_levels, size_quote, update_trailing
+from .risk import Position, exit_reason, initial_levels, order_size, update_trailing
 
 
 def run_backtest(df: pd.DataFrame, cfg: Config, train_candles: int = 2000,
-                 retrain_every: int = 250) -> dict:
+                 retrain_every: int = 250, exchange_min: float = 5.0) -> dict:
     if len(df) < train_candles + 100:
         raise ValueError(f"Need at least {train_candles + 100} candles, got {len(df)}")
     feats = add_features(df)
@@ -61,8 +61,8 @@ def run_backtest(df: pd.DataFrame, cfg: Config, train_candles: int = 2000,
 
         if pos is None and not math.isnan(prob) and prob >= cfg.buy_threshold:
             equity = cash
-            quote = size_quote(cfg, equity, cash, c[i], atrs[i])
-            if quote >= 10:
+            quote = order_size(cfg, equity, cash, c[i], atrs[i], exchange_min)
+            if quote > 0:
                 price = c[i] * (1 + cfg.slippage)
                 amount = quote * (1 - cfg.fee_rate) / price
                 stop, tp = initial_levels(cfg, price, atrs[i])

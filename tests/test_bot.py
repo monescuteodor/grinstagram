@@ -10,7 +10,7 @@ from grgtrading.broker import PaperBroker
 from grgtrading.config import Config
 from grgtrading.features import FEATURE_COLUMNS, add_features, make_labels
 from grgtrading.model import SignalModel
-from grgtrading.risk import AccountGuard, Position, exit_reason, size_quote
+from grgtrading.risk import AccountGuard, Position, exit_reason, order_size, size_quote
 
 
 def synthetic_ohlcv(n=3000, seed=0, momentum=0.0):
@@ -49,7 +49,7 @@ class FakeExchange:
         return {"last": float(self.df["close"].iloc[-1])}
 
     def market(self, symbol):
-        return {"limits": {"cost": {"min": 5}}}
+        return {"limits": {"cost": {"min": 5}, "amount": {"min": 0.001}}}
 
 
 def cfg(tmp_path, **kw):
@@ -75,6 +75,24 @@ def test_position_size_respects_limits(tmp_path):
     assert size_quote(c, 1000, 1000, 100, 1.0) == pytest.approx(300)
     assert size_quote(c, 1000, 100, 100, 1.0) == pytest.approx(99)
     assert size_quote(c, 1000, 1000, 100, 0.0) == 0
+
+
+def test_order_size_respects_exchange_minimum(tmp_path):
+    # 20 USDT account: risk sizing gives ~6 USDT, below the 5 * 1.25 = 6.25 floor
+    normal = cfg(tmp_path)
+    small = cfg(tmp_path, small_account_mode=True)
+    assert order_size(normal, 20, 20, 100, 1.0, exchange_min=5) == 0
+    assert order_size(small, 20, 20, 100, 1.0, exchange_min=5) == pytest.approx(6.25)
+    # balance below the exchange minimum: impossible even in small-account mode
+    assert order_size(small, 2.2, 2.2, 100, 1.0, exchange_min=5) == 0
+    # big account: risk sizing wins
+    assert order_size(normal, 1000, 1000, 100, 1.0, exchange_min=5) == pytest.approx(300)
+
+
+def test_min_order_cost_uses_amount_and_cost_limits(tmp_path):
+    broker = PaperBroker(cfg(tmp_path), FakeExchange(synthetic_ohlcv(300)))
+    assert broker.min_order_cost("BTC/USDT", 100) == 5        # cost limit dominates
+    assert broker.min_order_cost("BTC/USDT", 10_000) == 10    # 0.001 * 10000
 
 
 def test_exit_rules(tmp_path):
@@ -146,4 +164,6 @@ def test_bot_step_trades_and_persists(tmp_path):
 def test_live_mode_requires_confirmation():
     with pytest.raises(ValueError):
         Config(mode="live", api_key="k", api_secret="s").validate()
+    Config(mode="live", sandbox=True, api_key="k", api_secret="s").validate()  # testnet: no real money
+    assert Config(mode="live", sandbox=True).profile == "sandbox"
     Config(mode="live", api_key="k", api_secret="s", live_confirm="I_UNDERSTAND_THE_RISKS").validate()

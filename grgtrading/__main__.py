@@ -1,4 +1,4 @@
-"""Command line: python -m grgtrading {run,backtest,status,reset-kill}"""
+"""Command line: python -m grgtrading {run,backtest,status,check,reset-kill}"""
 from __future__ import annotations
 
 import argparse
@@ -23,7 +23,7 @@ def setup_logging(cfg: Config) -> None:
 
 def cmd_run(cfg: Config, _args) -> None:
     from .bot import TradingBot
-    if cfg.mode == "live":
+    if cfg.profile == "live":
         logging.warning("LIVE MODE: real orders with real money on %s", cfg.exchange)
     TradingBot(cfg).run_forever()
 
@@ -34,7 +34,8 @@ def cmd_backtest(cfg: Config, args) -> None:
     broker = PaperBroker(cfg, make_exchange(cfg))
     for symbol in args.symbols or cfg.symbols:
         df = broker.fetch_ohlcv(symbol, args.candles)
-        result = run_backtest(df, cfg, train_candles=args.train)
+        exchange_min = broker.min_order_cost(symbol, float(df["close"].iloc[-1]))
+        result = run_backtest(df, cfg, train_candles=args.train, exchange_min=exchange_min)
         curve = result.pop("equity_curve")
         print(f"\n=== {symbol} [{cfg.timeframe}] ===")
         for k, v in result.items():
@@ -46,10 +47,10 @@ def cmd_backtest(cfg: Config, args) -> None:
 
 def cmd_status(cfg: Config, _args) -> None:
     from .storage import State, TradeJournal
-    state = State.load(cfg.data_dir / f"state_{cfg.mode}.json")
-    journal = TradeJournal(cfg.data_dir / f"trades_{cfg.mode}.db")
+    state = State.load(cfg.data_dir / f"state_{cfg.profile}.json")
+    journal = TradeJournal(cfg.data_dir / f"trades_{cfg.profile}.db")
     print(json.dumps({
-        "mode": cfg.mode,
+        "mode": cfg.profile,
         "last_heartbeat": state.last_heartbeat,
         "equity": round(state.last_equity, 2),
         "peak_equity": round(state.guard.peak_equity, 2),
@@ -62,10 +63,39 @@ def cmd_status(cfg: Config, _args) -> None:
         print("  ", row)
 
 
+def cmd_check(cfg: Config, _args) -> None:
+    """Verify connectivity, API keys and minimum order sizes without placing any order."""
+    import ccxt
+    from .broker import make_broker
+    from .risk import MIN_ORDER_BUFFER
+    print(f"Mode: {cfg.profile}   Exchange: {cfg.exchange}")
+    try:
+        broker = make_broker(cfg)
+        cash = broker.cash()
+    except ccxt.AuthenticationError as exc:
+        sys.exit(f"API key rejected by {cfg.exchange}: {exc}")
+    except ccxt.NetworkError as exc:
+        sys.exit(f"Cannot reach {cfg.exchange}: {exc}")
+    simulated = "  (simulated STARTING_BALANCE)" if cfg.mode == "paper" else ""
+    print(f"Available {cfg.quote}: {cash:.4f}{simulated}")
+    ok = True
+    for symbol in cfg.symbols:
+        price = broker.last_price(symbol)
+        needed = broker.min_order_cost(symbol, price) * MIN_ORDER_BUFFER
+        can_trade = cash * 0.99 >= needed
+        ok &= can_trade
+        print(f"  {symbol:12s} price {price:<14.6g} smallest tradable position ~{needed:.2f} {cfg.quote}"
+              f"  {'OK' if can_trade else 'BALANCE TOO SMALL'}")
+    if ok and not cfg.small_account_mode:
+        print("Note: with a small balance, risk-based sizing may still fall below these minimums; "
+              "set SMALL_ACCOUNT_MODE=true to trade the minimum instead.")
+    print("No orders were placed.")
+
+
 def cmd_reset_kill(cfg: Config, _args) -> None:
     from .risk import AccountGuard
     from .storage import State
-    path = cfg.data_dir / f"state_{cfg.mode}.json"
+    path = cfg.data_dir / f"state_{cfg.profile}.json"
     state = State.load(path)
     state.guard = AccountGuard()
     state.save(path)
@@ -81,14 +111,15 @@ def main() -> None:
     bt.add_argument("--candles", type=int, default=8000)
     bt.add_argument("--train", type=int, default=2000)
     sub.add_parser("status", help="show equity, positions and recent trades")
+    sub.add_parser("check", help="check API keys, balance and exchange minimums (no orders)")
     sub.add_parser("reset-kill", help="clear the drawdown kill switch")
     args = parser.parse_args()
 
-    overrides = {"mode": "paper"} if args.command == "backtest" else {}
+    overrides = {"mode": "paper", "sandbox": False} if args.command == "backtest" else {}
     cfg = Config.from_env(**overrides)
     if args.command in ("run", "backtest"):
         setup_logging(cfg)
-    {"run": cmd_run, "backtest": cmd_backtest, "status": cmd_status,
+    {"run": cmd_run, "backtest": cmd_backtest, "status": cmd_status, "check": cmd_check,
      "reset-kill": cmd_reset_kill}[args.command](cfg, args)
 
 

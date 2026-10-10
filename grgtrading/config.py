@@ -13,6 +13,7 @@ class Config:
     exchange: str = "binance"           # any ccxt exchange id
     api_key: str = ""
     api_secret: str = ""
+    sandbox: bool = False               # live mode against the exchange's testnet (fake money)
     symbols: tuple[str, ...] = ("BTC/USDT", "ETH/USDT")
     timeframe: str = "1h"
     history_candles: int = 3000         # candles used to train the model
@@ -36,6 +37,7 @@ class Config:
     stop_loss_atr: float = 2.0
     take_profit_atr: float = 4.0
     trailing_stop: bool = True
+    small_account_mode: bool = False    # buy the exchange minimum when risk sizing is below it
     max_drawdown_pct: float = 0.20      # kill switch: close everything and stop trading
     daily_loss_limit_pct: float = 0.05  # no new entries for the rest of the UTC day
 
@@ -82,7 +84,7 @@ class Config:
         if self.mode == "live":
             if not (self.api_key and self.api_secret):
                 raise ValueError("Live mode needs API_KEY and API_SECRET")
-            if self.live_confirm != "I_UNDERSTAND_THE_RISKS":
+            if not self.sandbox and self.live_confirm != "I_UNDERSTAND_THE_RISKS":
                 raise ValueError("Live mode needs LIVE_CONFIRM=I_UNDERSTAND_THE_RISKS")
         if not self.symbols:
             raise ValueError("SYMBOLS must list at least one market, e.g. BTC/USDT")
@@ -95,6 +97,11 @@ class Config:
             raise ValueError("MAX_POSITION_PCT must be between 0 and 1")
         if self.sell_threshold >= self.buy_threshold:
             raise ValueError("SELL_THRESHOLD must be below BUY_THRESHOLD")
+
+    @property
+    def profile(self) -> str:
+        """Name used for state/journal files so paper, sandbox and live never mix."""
+        return "sandbox" if self.mode == "live" and self.sandbox else self.mode
 
     @property
     def quote(self) -> str:
