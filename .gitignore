@@ -1,21 +1,7 @@
-# Dependencies
-node_modules/
-
-# Runtime data
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
-
-# Uploaded images (keep the folder, ignore the content)
-uploads/*
-!uploads/.gitkeep
-
-# Logs & env
-*.log
 .env
-npm-debug.log*
-
-# OS files
-.DS_Store
-Thumbs.db
+data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
