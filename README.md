@@ -135,6 +135,12 @@ sell, repeated errors, and the kill switch.
 
 Full list: `grgtrading/config.py` and `.env.example`.
 
+## Website
+
+`website/` holds a static landing page (HTML, CSS, JS, no build step). To host it
+on Cloudflare Pages: connect the repo, leave the build command empty and set the
+output directory to `website`. Or upload the folder via "Direct Upload".
+
 ## Tests
 
 ```bash
