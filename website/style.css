@@ -231,3 +231,26 @@ details p { color: var(--muted); padding-bottom: 18px; margin: 0; }
   .terminal { width: 100%; margin-top: 12px; }
   .edge-row { grid-template-columns: 80px 1fr 70px; }
 }
+
+/* ---------- Multi-page additions ---------- */
+.nav-links a.active { color: var(--accent) !important; }
+.page-hero { position: relative; padding: 72px 0 8px; }
+.page-hero::before {
+  content: ""; position: absolute; inset: -200px 0 auto; height: 500px; z-index: -1;
+  background: radial-gradient(600px 260px at 20% 40%, rgba(34, 227, 160, .12), transparent 70%);
+}
+.page-hero h1 { font-size: clamp(2rem, 4.4vw, 3rem); max-width: 18em; }
+.page-hero + .section { padding-top: 40px; }
+.link-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.link-card {
+  display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 26px; transition: border-color .2s, transform .2s;
+}
+.link-card:hover { border-color: rgba(34, 227, 160, .45); transform: translateY(-3px); }
+.link-card p { color: var(--muted); font-size: .95rem; flex: 1; }
+.link-card .go { color: var(--accent); font-weight: 600; font-size: .92rem; }
+.link-card .go::after { content: " →"; transition: margin .2s; }
+.link-card:hover .go::after { margin-left: 4px; }
+.next-page { margin-top: 48px; text-align: center; }
+@media (max-width: 980px) { .link-cards { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .link-cards { grid-template-columns: 1fr; } .page-hero { padding-top: 48px; } }
