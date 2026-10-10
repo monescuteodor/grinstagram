@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install GrgTrading as an always-on systemd service on Raspberry Pi OS (64-bit) or Debian.
+# Install GrgTrading as an always-on systemd service on Linux
+# (Raspberry Pi OS 64-bit, Debian/Ubuntu, Arch/BlackArch, Fedora).
 # Usage (from the repo folder):  bash deploy/install-pi.sh
 set -euo pipefail
 
@@ -12,8 +13,16 @@ if [ "$(uname -m)" != "aarch64" ] && [ "$(uname -m)" != "x86_64" ]; then
 fi
 
 echo "==> Installing system packages"
-sudo apt-get update -qq
-sudo apt-get install -y -qq python3-venv python3-pip
+if command -v apt-get >/dev/null; then          # Raspberry Pi OS, Debian, Ubuntu
+  sudo apt-get update -qq
+  sudo apt-get install -y -qq python3-venv python3-pip nano
+elif command -v pacman >/dev/null; then         # Arch, BlackArch, Manjaro
+  sudo pacman -S --needed --noconfirm python nano
+elif command -v dnf >/dev/null; then            # Fedora
+  sudo dnf install -y python3 nano
+else
+  echo "Unknown package manager: install Python 3.11+ yourself, then re-run this script."
+fi
 
 echo "==> Creating virtual environment and installing dependencies (can take 10-20 min on a Pi Zero)"
 [ -d venv ] || python3 -m venv venv
