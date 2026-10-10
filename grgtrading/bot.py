@@ -14,7 +14,8 @@ from .config import Config
 from .features import atr
 from .model import SignalModel
 from .notify import Notifier
-from .risk import Position, exit_reason, initial_levels, size_quote, update_trailing
+from .risk import (MIN_ORDER_BUFFER, Position, exit_reason, initial_levels, order_size,
+                   size_quote, update_trailing)
 from .storage import State, TradeJournal
 
 log = logging.getLogger(__name__)
@@ -23,10 +24,10 @@ log = logging.getLogger(__name__)
 class TradingBot:
     def __init__(self, cfg: Config, broker: Broker | None = None):
         self.cfg = cfg
-        self.state_path = cfg.data_dir / f"state_{cfg.mode}.json"
+        self.state_path = cfg.data_dir / f"state_{cfg.profile}.json"
         self.state = State.load(self.state_path)
         self.broker = broker or make_broker(cfg, self.state.paper_balances)
-        self.journal = TradeJournal(cfg.data_dir / f"trades_{cfg.mode}.db")
+        self.journal = TradeJournal(cfg.data_dir / f"trades_{cfg.profile}.db")
         self.notifier = Notifier(cfg)
         self.models = {s: SignalModel.load(cfg, self._model_path(s)) for s in cfg.symbols}
         self.candles: dict[str, pd.DataFrame] = {}
@@ -68,14 +69,22 @@ class TradingBot:
         return total
 
     def _open(self, symbol: str, price: float, atr_value: float, prob: float, equity: float) -> None:
-        quote = size_quote(self.cfg, equity, self.broker.cash(), price, atr_value)
-        if quote < max(self.broker.min_cost(symbol), 10.0):
+        cash = self.broker.cash()
+        exchange_min = self.broker.min_order_cost(symbol, price)
+        quote = order_size(self.cfg, equity, cash, price, atr_value, exchange_min)
+        if quote <= 0:
+            log.info("%s: buy signal skipped, position would be below the exchange minimum "
+                     "(%.2f %s incl. safety margin, cash %.2f). Add funds or set SMALL_ACCOUNT_MODE=true.",
+                     symbol, exchange_min * MIN_ORDER_BUFFER, self.cfg.quote, cash)
             return
+        if quote > size_quote(self.cfg, equity, cash, price, atr_value):
+            log.warning("%s: small-account mode, buying the exchange minimum; this risks more than "
+                        "RISK_PER_TRADE of equity", symbol)
         fill = self.broker.buy(symbol, quote)
         stop, tp = initial_levels(self.cfg, fill.price, atr_value)
         self.state.positions[symbol] = Position(symbol, fill.amount, fill.price, stop, tp,
                                                 datetime.now(timezone.utc).isoformat())
-        self.journal.record(ts=_now(), mode=self.cfg.mode, symbol=symbol, side="buy",
+        self.journal.record(ts=_now(), mode=self.cfg.profile, symbol=symbol, side="buy",
                             amount=fill.amount, price=fill.price, cost=fill.cost, fee=fill.fee,
                             reason=f"p={prob:.3f}", pnl=None)
         self.notifier.send(f"BUY {symbol} {fill.amount:.6f} @ {fill.price:.2f} "
@@ -83,10 +92,11 @@ class TradingBot:
         self._persist(self.state.last_equity)
 
     def _close(self, symbol: str, reason: str) -> None:
-        pos = self.state.positions.pop(symbol)
-        fill = self.broker.sell(symbol, pos.amount)
+        pos = self.state.positions[symbol]
+        fill = self.broker.sell(symbol, pos.amount)  # if this raises, the position stays tracked
+        del self.state.positions[symbol]
         pnl = fill.cost - pos.amount * pos.entry_price * (1 + self.cfg.fee_rate)
-        self.journal.record(ts=_now(), mode=self.cfg.mode, symbol=symbol, side="sell",
+        self.journal.record(ts=_now(), mode=self.cfg.profile, symbol=symbol, side="sell",
                             amount=fill.amount, price=fill.price, cost=fill.cost, fee=fill.fee,
                             reason=reason, pnl=pnl)
         self.notifier.send(f"SELL {symbol} @ {fill.price:.2f} ({reason}) PnL {pnl:+.2f} {self.cfg.quote}")
@@ -153,7 +163,7 @@ class TradingBot:
     def run_forever(self) -> None:
         signal.signal(signal.SIGTERM, self.stop)
         signal.signal(signal.SIGINT, self.stop)
-        self.notifier.send(f"Started in {self.cfg.mode.upper()} mode on {self.cfg.exchange} "
+        self.notifier.send(f"Started in {self.cfg.profile.upper()} mode on {self.cfg.exchange} "
                            f"{', '.join(self.cfg.symbols)} [{self.cfg.timeframe}]")
         failures = 0
         while self._running:

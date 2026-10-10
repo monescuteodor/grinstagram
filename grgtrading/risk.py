@@ -29,6 +29,23 @@ def size_quote(cfg: Config, equity: float, cash: float, price: float, atr_value:
     return max(0.0, min(by_risk, equity * cfg.max_position_pct, cash * 0.99))
 
 
+# Exchanges reject orders below a minimum value. Positions are opened with a
+# margin above it so that a stop-loss sell after a price drop still clears it.
+MIN_ORDER_BUFFER = 1.25
+
+
+def order_size(cfg: Config, equity: float, cash: float, price: float, atr_value: float,
+               exchange_min: float) -> float:
+    """Quote amount to actually spend, or 0 if the trade cannot be placed."""
+    floor = exchange_min * MIN_ORDER_BUFFER
+    quote = size_quote(cfg, equity, cash, price, atr_value)
+    if quote > 0 and quote >= floor:
+        return quote
+    if cfg.small_account_mode and 0 < floor <= cash * 0.99:
+        return floor
+    return 0.0
+
+
 def initial_levels(cfg: Config, price: float, atr_value: float) -> tuple[float, float]:
     return price - cfg.stop_loss_atr * atr_value, price + cfg.take_profit_atr * atr_value
 
