@@ -67,7 +67,7 @@ docker compose exec bot python -m grgtrading status
 `restart: unless-stopped` brings it back after a crash or reboot.
 Data (state, models, trade journal, logs) lives in `./data`.
 
-### Running 24/7 on a Raspberry Pi
+### Running 24/7 on a Raspberry Pi or any Linux machine
 
 Works on a Raspberry Pi 4/5 and, with 512 MB RAM, on a Pi Zero 2 W. Flash
 **Raspberry Pi OS Lite (64-bit)** (the 32-bit OS would have to compile pandas and
@@ -82,6 +82,10 @@ nano .env                        # settings (paper mode by default)
 sudo systemctl start grgtrading  # runs now and after every reboot
 journalctl -u grgtrading -f      # live log
 ```
+
+The same script works on any Linux PC or laptop with systemd (Debian/Ubuntu,
+Arch/BlackArch, Fedora). On rolling-release distros like Arch, a Python upgrade can
+break the virtual environment: delete `venv` and run the script again.
 
 On a Pi Zero 2 W, keep `SYMBOLS` to one or two pairs. If the bot is killed while
 retraining (out of memory), give it 1 GB of swap.
