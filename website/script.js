@@ -169,6 +169,75 @@
     }, 1400);
   }
 
+  // ---------- Draggable windows ----------
+  const dock = document.querySelector(".dock");
+  let topZ = 10;
+  const focus = (win) => {
+    document.querySelectorAll(".window.focused").forEach((w) => w.classList.remove("focused"));
+    win.classList.add("focused");
+    win.style.zIndex = ++topZ;
+  };
+  const refit = () => window.dispatchEvent(new Event("resize"));
+
+  document.querySelectorAll(".window").forEach((win) => {
+    const bar = win.querySelector(".win-bar");
+    let x = 0, y = 0, startX = 0, startY = 0, dragging = false;
+
+    const place = () => { win.style.transform = x || y ? `translate(${x}px, ${y}px)` : ""; };
+
+    win.addEventListener("pointerdown", () => focus(win));
+
+    bar.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("button")) return;
+      dragging = true;
+      startX = e.clientX - x;
+      startY = e.clientY - y;
+      bar.setPointerCapture(e.pointerId);
+      win.classList.add("dragging");
+    });
+    bar.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      x = e.clientX - startX;
+      y = e.clientY - startY;
+      // Keep the title bar inside the viewport so the window can always be grabbed again
+      const r = win.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth;
+      if (r.right < 80) x += 80 - r.right;
+      if (r.left > vw - 80) x -= r.left - (vw - 80);
+      if (r.top < 64) y += 64 - r.top;
+      if (r.top > window.innerHeight - 40) y -= r.top - (window.innerHeight - 40);
+      place();
+    });
+    const stop = () => { dragging = false; win.classList.remove("dragging"); };
+    bar.addEventListener("pointerup", stop);
+    bar.addEventListener("pointercancel", stop);
+
+    const toggleMax = () => {
+      win.classList.remove("minimized");
+      win.classList.toggle("maximized");
+      refit();
+    };
+    bar.addEventListener("dblclick", (e) => { if (!e.target.closest("button")) toggleMax(); });
+    win.querySelector(".max").addEventListener("click", toggleMax);
+    win.querySelector(".min").addEventListener("click", () => {
+      win.classList.toggle("minimized");
+      refit();
+    });
+    win.querySelector(".close").addEventListener("click", () => {
+      win.classList.add("closed");
+      const btn = document.createElement("button");
+      btn.textContent = "Open " + win.dataset.name;
+      btn.addEventListener("click", () => {
+        win.classList.remove("closed", "minimized");
+        x = 0; y = 0; place();
+        focus(win);
+        btn.remove();
+        refit();
+      });
+      dock.appendChild(btn);
+    });
+  });
+
   // ---------- Terminal log ----------
   const term = document.getElementById("term");
   const lines = [

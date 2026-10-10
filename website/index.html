@@ -48,17 +48,35 @@
         </div>
 
         <div class="hero-visual reveal">
-          <div class="chart-card">
-            <div class="card-head">
+          <div class="chart-card window" data-name="Chart">
+            <div class="card-head win-bar">
+              <div class="win-btns">
+                <button class="close" aria-label="Close window"></button>
+                <button class="min" aria-label="Minimize window"></button>
+                <button class="max" aria-label="Maximize window"></button>
+              </div>
               <span class="sym">BTC/USDT · 1h</span>
               <span class="live"><span class="dot"></span> simulated</span>
             </div>
-            <canvas id="chart" aria-label="Animated example candlestick chart" role="img"></canvas>
+            <div class="win-body">
+              <canvas id="chart" aria-label="Animated example candlestick chart" role="img"></canvas>
+            </div>
           </div>
-          <div class="terminal">
-            <div class="term-head"><i></i><i></i><i></i><span>example output · python -m grgtrading run</span></div>
-            <pre id="term" aria-live="off"></pre>
+          <div class="terminal window" data-name="Terminal">
+            <div class="term-head win-bar">
+              <div class="win-btns">
+                <button class="close" aria-label="Close window"></button>
+                <button class="min" aria-label="Minimize window"></button>
+                <button class="max" aria-label="Maximize window"></button>
+              </div>
+              <span>example output · python -m grgtrading run</span>
+            </div>
+            <div class="win-body">
+              <pre id="term" aria-live="off"></pre>
+            </div>
           </div>
+          <div class="dock" aria-live="polite"></div>
+          <p class="win-hint">Tip: drag the windows by their title bar · double-click to maximize</p>
         </div>
       </div>
     </section>
