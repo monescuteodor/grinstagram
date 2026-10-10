@@ -67,6 +67,25 @@ docker compose exec bot python -m grgtrading status
 `restart: unless-stopped` brings it back after a crash or reboot.
 Data (state, models, trade journal, logs) lives in `./data`.
 
+### Running 24/7 on a Raspberry Pi
+
+Works on a Raspberry Pi 4/5 and, with 512 MB RAM, on a Pi Zero 2 W. Flash
+**Raspberry Pi OS Lite (64-bit)** (the 32-bit OS would have to compile pandas and
+scikit-learn for hours), enable SSH and Wi-Fi in Raspberry Pi Imager, then:
+
+```bash
+sudo apt-get install -y git
+git clone https://github.com/monescuteodor/GrgTrading
+cd GrgTrading
+bash deploy/install-pi.sh        # venv, dependencies, systemd service
+nano .env                        # settings (paper mode by default)
+sudo systemctl start grgtrading  # runs now and after every reboot
+journalctl -u grgtrading -f      # live log
+```
+
+On a Pi Zero 2 W, keep `SYMBOLS` to one or two pairs. If the bot is killed while
+retraining (out of memory), give it 1 GB of swap.
+
 ## Going live
 
 1. **Optional dry run on the testnet** (fake money, real order flow): create
